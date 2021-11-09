@@ -137,7 +137,13 @@ final class CameraConfigurationManager {
 	private static Point findBestPreviewSizeValue(CharSequence previewSizeValueString, Point screenResolution) {
 		int bestX = 0;
 		int bestY = 0;
-		int diff = Integer.MAX_VALUE;
+		//int diff = Integer.MAX_VALUE; //旧代码使用变量，一并注释掉
+		//新代码新增变量begin
+		float tmp_diff; 
+		float min_diff = -1f;
+		float rate = Math.max(screenResolution.x, screenResolution.y) / Math.min(screenResolution.x, screenResolution.y);
+		//新代码新增变量end
+		
 		for (String previewSize : COMMA_PATTERN.split(previewSizeValueString)) {
 
 			previewSize = previewSize.trim();
@@ -156,18 +162,33 @@ final class CameraConfigurationManager {
 				Log.w(TAG, "Bad preview-size: " + previewSize);
 				continue;
 			}
-
-			int newDiff = Math.abs(newX - screenResolution.x) + Math.abs(newY - screenResolution.y);
-			if (newDiff == 0) {
+			//注释1：begin，如下代码未返回正常的camera preview size，相机预览变形是因为camera拍照与预览尺寸高宽比不一致导致的
+			//应该找到拍照尺寸高宽比相同或者最接近的返回，并且为防止图像模糊，预览尺寸的绝对size从大到小进行挑选。
+			//int newDiff = Math.abs(newX - screenResolution.x) + Math.abs(newY - screenResolution.y);
+			//if (newDiff == 0) {
+			//	bestX = newX;
+			//	bestY = newY;
+			//	break;
+			//} else if (newDiff < diff) {
+			//	bestX = newX;
+			//	bestY = newY;
+			//	diff = newDiff;
+			//}
+			//注释1：end
+			//注释2：begin 按高宽比返回camera preview size
+			float current_rate = Math.max(newX, newY)/ Math.min(newX, newY);
+			tmp_diff = Math.abs(current_rate-rate);
+			if( min_diff < 0){
+				min_diff = tmp_diff ;
 				bestX = newX;
 				bestY = newY;
-				break;
-			} else if (newDiff < diff) {
-				bestX = newX;
-				bestY = newY;
-				diff = newDiff;
 			}
-
+			if( tmp_diff < min_diff ){
+				min_diff = tmp_diff ;
+				bestX = newX;
+				bestY = newY;
+			}
+			//注释2：end
 		}
 
 		if (bestX > 0 && bestY > 0) {
